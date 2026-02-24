@@ -24,7 +24,7 @@
 
 1. Склонируйте репозиторий:
    ```bash
-   git clone [https://github.com/ВАШ_НИК/Mission-Time.git](https://github.com/ВАШ_НИК/Mission-Time.git)
+   git clone [https://github.com/GatamiL/Mission-Time.git](https://github.com/GatamiL/Mission-Time.git)
 2. Откройте решение .sln в Visual Studio.
 3. Убедитесь, что установлены необходимые NuGet-пакеты (например, EPPlus, System.Data.SQLite).
 4. Скомпилируйте и запустите проект. При первом запуске программа предложит выбрать или создать файл базы данных SQLite.
