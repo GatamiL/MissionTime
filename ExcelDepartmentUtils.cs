@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace MissionTime
 {
@@ -16,6 +17,7 @@ namespace MissionTime
             public long EphId { get; set; }
             public string Fio { get; set; }
             public string PositionName { get; set; }
+            public string GroupName { get; set; } // <--- НОВОЕ ПОЛЕ ДЛЯ ГРУППЫ
             public DataTable Works { get; set; }
             public DataTable Mins { get; set; }
         }
@@ -80,6 +82,19 @@ namespace MissionTime
                     var works = db.ListOfWork_UsedForEphProgramPeriod(ephId, (int)programId, periodStart, periodEnd);
                     var mins = db.TimesheetMinutes_ByEphProgramWorkDayPeriod(ephId, (int)programId, periodStart, periodEnd);
 
+                    // --- ИЩЕМ ГРУППУ СОТРУДНИКА ---
+                    string empGroup = "";
+                    var dtGroup = db.Query(
+                        "SELECT d.Name, d.Level FROM Departments d INNER JOIN EmployeePositionsHistory eph ON d.Id = eph.DepartmentId WHERE eph.Id = @eph",
+                        new System.Data.SQLite.SQLiteParameter("@eph", ephId));
+
+                    if (dtGroup.Rows.Count > 0)
+                    {
+                        // Если уровень подразделения = 4 (Группа), запоминаем её название
+                        if (Convert.ToInt32(dtGroup.Rows[0]["Level"]) == 4)
+                            empGroup = Convert.ToString(dtGroup.Rows[0]["Name"]);
+                    }
+
                     if (works != null && works.Rows.Count > 0)
                     {
                         empDataList.Add(new EmployeeData
@@ -87,6 +102,7 @@ namespace MissionTime
                             EphId = ephId,
                             Fio = (Convert.ToString(r["Fio"]) ?? "").Trim(),
                             PositionName = (Convert.ToString(r["PositionName"]) ?? "").Trim(),
+                            GroupName = empGroup, // <--- СОХРАНЯЕМ ГРУППУ
                             Works = works,
                             Mins = mins
                         });
@@ -131,18 +147,13 @@ namespace MissionTime
                     iterMonth = iterMonth.AddMonths(1);
                 }
 
-                var allWeeks = GetProgramWeeks(programStart, reportEnd);
-                var activeDates = new HashSet<DateTime>();
-                if (fullAgg != null)
-                {
-                    foreach (DataRow r in fullAgg.Rows)
-                    {
-                        if (Convert.ToInt32(r["MinSum"]) > 0)
-                            activeDates.Add(DateTime.Parse(Convert.ToString(r["WorkDate"])).Date);
-                    }
-                }
+                // Достаем активные даты по программе из базы
+                var activeDates = db.Timesheet_GetActiveDatesForProgram((int)programId);
 
-                var activeWeeks = allWeeks.Where(w => activeDates.Any(d => d >= w.Start && d <= w.End)).ToList();
+                // Получаем умные периоды с правильной нумерацией
+                var activeWeeks = PeriodCalculator.GetActiveWeeks(programStart, year, month, activeDates);
+
+                // Берем последние 6 активных недель
                 var last6Weeks = activeWeeks.Skip(Math.Max(0, activeWeeks.Count - 6)).ToList();
 
                 FillSheet1_Summary(ws1, last6Weeks, fullAgg);
@@ -187,7 +198,15 @@ namespace MissionTime
                         ws = wb.Worksheets.Add("tmp_" + Guid.NewGuid().ToString("N").Substring(0, 8), tmplWs);
                     }
 
-                    FillEmployeeSheet(ws, programName, complexName, departmentName, periodStart, periodEnd, emp.Fio, emp.PositionName, doneFio, checkedFio);
+                    // --- ФОРМИРУЕМ НАЗВАНИЕ ПОДРАЗДЕЛЕНИЯ ---
+                    // Если группа есть, пишем "Отдел, Группа", если нет - просто "Отдел"
+                    string fullDeptName = string.IsNullOrWhiteSpace(emp.GroupName)
+                        ? departmentName
+                        : $"{departmentName} {emp.GroupName}";
+
+                    // Передаем наше склеенное имя (fullDeptName) в карточку!
+                    FillEmployeeSheet(ws, programName, complexName, fullDeptName, periodStart, periodEnd, emp.Fio, emp.PositionName, doneFio, checkedFio);
+
                     FillSheet3_EmployeeDaily(ws, periodStart, periodEnd, emp.Works, emp.Mins);
 
                     string sheetName = BuildNameWithDuplicateSuffix(emp.Fio, fioCounts);
@@ -206,7 +225,7 @@ namespace MissionTime
         }
 
         #region Вспомогательные методы генерации листов
-        private static void FillSheet1_Summary(ExcelWorksheet ws, List<(int WeekNum, DateTime Start, DateTime End)> weeks, DataTable aggData)
+        private static void FillSheet1_Summary(ExcelWorksheet ws, List<WorkPeriod> weeks, DataTable aggData)
         {
             int headerRow = 14;
             int startCol = 3;
@@ -242,8 +261,11 @@ namespace MissionTime
                         worksOrder.Add(workId);
                     }
                     DateTime wd = DateTime.Parse(Convert.ToString(r["WorkDate"])).Date;
+
+                    // Ищем нашу неделю-объект
                     var week = weeks.FirstOrDefault(w => wd >= w.Start && wd <= w.End);
-                    if (week.WeekNum > 0)
+
+                    if (week != null) // Если дата попадает в одну из активных недель
                     {
                         int mins = Convert.ToInt32(r["MinSum"]);
                         var key = (workId, week.WeekNum);
@@ -480,7 +502,27 @@ namespace MissionTime
         #endregion
 
         #region Утилиты (расчет высоты, имен, стилей)
+        public static string GetShortDepartmentName(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName)) return "Отдел";
 
+            // Ищем слово "отдел" (в любом регистре), игнорируем любые пробелы 
+            // и захватываем сам номер (цифры + возможно буква на конце, например "10А")
+            var match = System.Text.RegularExpressions.Regex.Match(fullName, @"(?i)отдел\s*([0-9]+[а-яА-Яa-zA-Z]?)");
+
+            if (match.Success)
+            {
+                // Если нашли паттерн, возвращаем строго "Отд ХХ"
+                return $"Отд {match.Groups[1].Value}";
+            }
+
+            // Если это вообще не отдел с номером (например "Служба безопасности"), 
+            // то просто обрезаем длинное название до 20 символов, чтобы не ломать путь к файлу.
+            if (fullName.Length > 20)
+                return fullName.Substring(0, 20).Trim() + "..";
+
+            return fullName;
+        }
         public static void EnsureDirectory(string dir)
         {
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
@@ -507,17 +549,46 @@ namespace MissionTime
             range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
             range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
 
-            double fontSize = range.Style.Font.Size;
-            double totalWidth = 0;
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            // 1. Достаем реальный шрифт ячейки (или берем Arial по умолчанию)
+            string fontName = string.IsNullOrEmpty(range.Style.Font.Name) ? "Arial" : range.Style.Font.Name;
+            float fontSize = range.Style.Font.Size;
+            bool isBold = range.Style.Font.Bold;
+
+            // 2. Вычисляем точную ширину объединенного диапазона в пикселях
+            float widthPx = 0;
             for (int col = range.Start.Column; col <= range.End.Column; col++)
-                totalWidth += ws.Column(col).Width;
+            {
+                // Стандартная формула перевода ширины колонок EPPlus в пиксели
+                widthPx += (float)(ws.Column(col).Width * 7.0 + 5.0);
+            }
 
-            if (totalWidth <= 0) totalWidth = 10;
-            double charsPerLine = totalWidth * 1.1;
-            double lines = Math.Ceiling(text.Length / charsPerLine);
-            if (lines < 1) lines = 1;
+            if (widthPx < 20) widthPx = 20;
 
-            ws.Row(range.Start.Row).Height = (fontSize * 1.5) * lines;
+            // 3. Используем GDI+ для идеального измерения высоты текста
+            using (var bmp = new Bitmap(1, 1))
+            using (var g = Graphics.FromImage(bmp))
+            using (var font = new Font(fontName, fontSize, isBold ? FontStyle.Bold : FontStyle.Regular))
+            {
+                // Замеряем, сколько места займет текст при нашей ширине
+                var size = g.MeasureString(text, font, new SizeF(widthPx, 10000));
+
+                // Переводим пиксели в пункты (Points) для Excel
+                double heightPt = size.Height * 72.0 / g.DpiY;
+
+                // ДОБАВЛЯЕМ ЖЕЛЕЗНЫЙ ЗАПАС (как в другом нашем методе)
+                // +15% и +10 пунктов, чтобы ни одна буква снизу не обрезалась
+                heightPt = (heightPt * 1.15) + 10;
+
+                // Берем текущую высоту строки. Если наша новая высота больше - увеличиваем!
+                double currentHeight = ws.Row(range.Start.Row).Height;
+                if (heightPt > currentHeight)
+                {
+                    ws.Row(range.Start.Row).CustomHeight = true;
+                    ws.Row(range.Start.Row).Height = heightPt;
+                }
+            }
         }
 
         private static void AutoFitRowHeightByText(ExcelWorksheet ws, int row, int colFrom, int colTo, string fontName = "Arial", float fontSize = 12f, float paddingPx = 6f)
@@ -541,7 +612,14 @@ namespace MissionTime
             using (var font = new Font(fontName, fontSize))
             {
                 var size = g.MeasureString(text, font, new SizeF(widthPx, 10000));
+
+                // Базовый расчет
                 double heightPt = (size.Height + paddingPx) * 72.0 / g.DpiY;
+
+                // --- ДОБАВЛЯЕМ ЖЕЛЕЗНЫЙ ЗАПАС ---
+                // Увеличиваем высоту на 15% и добавляем 10 пунктов, чтобы ничего не обрезало
+                heightPt = (heightPt * 1.15) + 10;
+
                 ws.Row(row).CustomHeight = true;
                 ws.Row(row).Height = heightPt < 18 ? 18 : heightPt;
             }
@@ -577,26 +655,6 @@ namespace MissionTime
                 k++;
             }
             return name;
-        }
-
-        private static List<(int WeekNum, DateTime Start, DateTime End)> GetProgramWeeks(DateTime startDate, DateTime endDate)
-        {
-            var weeks = new List<(int WeekNum, DateTime Start, DateTime End)>();
-            DateTime currentStart = startDate.Date;
-            DateTime finalEnd = endDate.Date;
-            int weekNum = 1;
-
-            while (currentStart <= finalEnd)
-            {
-                int daysToSunday = ((int)DayOfWeek.Sunday - (int)currentStart.DayOfWeek + 7) % 7;
-                DateTime currentEnd = currentStart.AddDays(daysToSunday);
-                if (currentEnd > finalEnd) currentEnd = finalEnd;
-
-                weeks.Add((weekNum, currentStart, currentEnd));
-                weekNum++;
-                currentStart = currentEnd.AddDays(1);
-            }
-            return weeks;
         }
         #endregion
     }

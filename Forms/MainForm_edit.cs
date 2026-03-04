@@ -87,6 +87,7 @@ namespace MissionTime.Forms
                     cbProgram.SelectedValue = _programId;
 
                 // 5) грид
+                EnableDoubleBuffering(dgvTimeSheet);
                 BuildTimeSheetGridColumns();
                 ReloadTimeSheetGrid();
             }
@@ -214,6 +215,17 @@ namespace MissionTime.Forms
         {
 
         }
+        private static void EnableDoubleBuffering(DataGridView dgv)
+        {
+            typeof(DataGridView).InvokeMember(
+                "DoubleBuffered",
+                System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.SetProperty,
+                null,
+                dgv,
+                new object[] { true });
+        }
         private void BuildTimeSheetGridColumns()
         {
             dgvTimeSheet.AutoGenerateColumns = false;
@@ -315,100 +327,111 @@ namespace MissionTime.Forms
                 return;
             }
 
-            UpdateTimeSheetColumnsVisibility(_year, _month);
-            int daysInMonth = DateTime.DaysInMonth(_year, _month);
-
-            var dtWorks = _db.ListOfWork_UsedForEphProgramMonth(_ephId, _year, _month, programId);
-
-            // добавить “ручные”
-            if (_manualWorkIds.Count > 0)
+            // ЗАМОРАЖИВАЕМ ГРИД, ЧТОБЫ ОН НЕ ПЕРЕРИСОВЫВАЛСЯ ПРИ КАЖДОМ ЧИХЕ
+            dgvTimeSheet.SuspendLayout();
+            try
             {
-                var existing = new HashSet<long>();
-                foreach (DataRow r in dtWorks.Rows)
-                    existing.Add(Convert.ToInt64(r["WorkId"]));
+                UpdateTimeSheetColumnsVisibility(_year, _month);
+                int daysInMonth = DateTime.DaysInMonth(_year, _month);
 
-                var missing = _manualWorkIds.Where(id => !existing.Contains(id)).ToList();
-                if (missing.Count > 0)
+                var dtWorks = _db.ListOfWork_UsedForEphProgramMonth(_ephId, _year, _month, programId);
+
+                // добавить “ручные”
+                if (_manualWorkIds.Count > 0)
                 {
-                    var dtMissing = _db.ListOfWork_ByIds(missing);
-                    foreach (DataRow r in dtMissing.Rows)
-                        dtWorks.ImportRow(r);
-                }
-            }
+                    var existing = new HashSet<long>();
+                    foreach (DataRow r in dtWorks.Rows)
+                        existing.Add(Convert.ToInt64(r["WorkId"]));
 
-            if (dtWorks.Rows.Count == 0)
-            {
-                dgvTimeSheet.DataSource = null;
-                return;
-            }
-
-            // минуты по дням
-            var dtMin = _db.TimesheetMinutes_ByEphProgramWorkDay(_ephId, _year, _month, programId);
-
-            // map: WorkId|day -> minutes
-            var map = new Dictionary<string, int>();
-            foreach (DataRow r in dtMin.Rows)
-            {
-                long workId = Convert.ToInt64(r["WorkId"]);
-                DateTime d = DateTime.Parse(r["WorkDate"].ToString()).Date;
-                int mins = Convert.ToInt32(r["MinSum"]);
-                map[workId + "|" + d.Day] = mins;
-            }
-
-            // output
-            var outDt = new DataTable();
-            outDt.Columns.Add("WorkId", typeof(long));
-            outDt.Columns.Add("WorkName", typeof(string));
-            for (int i = 1; i <= 31; i++) outDt.Columns.Add("D" + i, typeof(string));
-            outDt.Columns.Add("Total", typeof(string));
-
-            var works = dtWorks.AsEnumerable()
-                .OrderBy(r => Convert.ToString(r["WorkName"]))
-                .ToList();
-
-            foreach (DataRow w in works)
-            {
-                long workId = Convert.ToInt64(w["WorkId"]);
-                string workName = Convert.ToString(w["WorkName"]);
-
-                int total = 0;
-
-                var row = outDt.NewRow();
-                row["WorkId"] = workId;
-                row["WorkName"] = workName;
-
-                for (int day = 1; day <= 31; day++)
-                {
-                    if (day > daysInMonth)
+                    var missing = _manualWorkIds.Where(id => !existing.Contains(id)).ToList();
+                    if (missing.Count > 0)
                     {
-                        row["D" + day] = "";
-                        continue;
+                        var dtMissing = _db.ListOfWork_ByIds(missing);
+                        foreach (DataRow r in dtMissing.Rows)
+                            dtWorks.ImportRow(r);
                     }
-
-                    DateTime cur = new DateTime(_year, _month, day);
-
-                    // ВНЕ сегмента -> "-"
-                    if (cur < _segStart || cur > _segEnd)
-                    {
-                        row["D" + day] = "-";
-                        continue;
-                    }
-
-                    // ВНУТРИ сегмента -> время
-                    map.TryGetValue(workId + "|" + day, out int mins);
-
-                    row["D" + day] = mins == 0 ? "" : TimeUtils.MinutesToHHmm(mins);
-                    total += mins;
                 }
 
-                row["Total"] = total == 0 ? "" : TimeUtils.MinutesToHHmm(total);
-                outDt.Rows.Add(row);
+                if (dtWorks.Rows.Count == 0)
+                {
+                    dgvTimeSheet.DataSource = null;
+                    return;
+                }
+
+                // минуты по дням
+                var dtMin = _db.TimesheetMinutes_ByEphProgramWorkDay(_ephId, _year, _month, programId);
+
+                // map: WorkId|day -> minutes
+                var map = new Dictionary<string, int>();
+                foreach (DataRow r in dtMin.Rows)
+                {
+                    long workId = Convert.ToInt64(r["WorkId"]);
+                    DateTime d = DateTime.Parse(r["WorkDate"].ToString()).Date;
+                    int mins = Convert.ToInt32(r["MinSum"]);
+                    map[workId + "|" + d.Day] = mins;
+                }
+
+                // output
+                var outDt = new DataTable();
+                outDt.Columns.Add("WorkId", typeof(long));
+                outDt.Columns.Add("WorkName", typeof(string));
+                for (int i = 1; i <= 31; i++) outDt.Columns.Add("D" + i, typeof(string));
+                outDt.Columns.Add("Total", typeof(string));
+
+                var works = dtWorks.AsEnumerable()
+                    .OrderBy(r => Convert.ToString(r["WorkName"]))
+                    .ToList();
+
+                foreach (DataRow w in works)
+                {
+                    long workId = Convert.ToInt64(w["WorkId"]);
+                    string workName = Convert.ToString(w["WorkName"]);
+
+                    int total = 0;
+
+                    var row = outDt.NewRow();
+                    row["WorkId"] = workId;
+                    row["WorkName"] = workName;
+
+                    for (int day = 1; day <= 31; day++)
+                    {
+                        if (day > daysInMonth)
+                        {
+                            row["D" + day] = "";
+                            continue;
+                        }
+
+                        DateTime cur = new DateTime(_year, _month, day);
+
+                        // ВНЕ сегмента -> "-"
+                        if (cur < _segStart || cur > _segEnd)
+                        {
+                            row["D" + day] = "-";
+                            continue;
+                        }
+
+                        // ВНУТРИ сегмента -> время
+                        map.TryGetValue(workId + "|" + day, out int mins);
+
+                        row["D" + day] = mins == 0 ? "" : TimeUtils.MinutesToHHmm(mins);
+                        total += mins;
+                    }
+
+                    row["Total"] = total == 0 ? "" : TimeUtils.MinutesToHHmm(total);
+                    outDt.Rows.Add(row);
+                }
+
+                // ПРИСВАИВАЕМ ДАННЫЕ ОДНИМ РАЗОМ
+                dgvTimeSheet.DataSource = outDt;
+
+                if (dgvTimeSheet.Columns["WorkId"] != null)
+                    dgvTimeSheet.Columns["WorkId"].Visible = false;
             }
-
-            dgvTimeSheet.DataSource = outDt;
-
-            if (dgvTimeSheet.Columns["WorkId"] != null)
-                dgvTimeSheet.Columns["WorkId"].Visible = false;
+            finally
+            {
+                // РАЗМОРАЖИВАЕМ И ЗАСТАВЛЯЕМ ОТРИСОВАТЬСЯ 1 РАЗ
+                dgvTimeSheet.ResumeLayout(true);
+            }
         }
         private void AddWorkRow(long workId, string workName)
         {

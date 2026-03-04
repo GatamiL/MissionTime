@@ -1,10 +1,12 @@
-﻿using System;
+﻿using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Windows.Forms;
 
 namespace MissionTime.Forms
@@ -76,7 +78,7 @@ namespace MissionTime.Forms
             {
                 f.Icon = this.Icon;
                 f.ShowDialog(this);
-            }    
+            }
 
             long? prevDepId = (cbDepartment.SelectedValue == null || cbDepartment.SelectedValue == DBNull.Value)
                 ? (long?)null
@@ -147,9 +149,14 @@ namespace MissionTime.Forms
         }
         private void menuReportForDpartment_Click(object sender, EventArgs e)
         {
-            ReportForDepartment form = new ReportForDepartment(_db);
-            form.Icon = this.Icon;
-            form.ShowDialog(this);
+            int year = Convert.ToInt32(cbYear.SelectedItem);
+            int month = Convert.ToInt32(cbMonth.SelectedValue);
+            int programId = Convert.ToInt32(cbProgram.SelectedValue);
+            using (var frm = new ReportForDepartment(_db, year, month, programId))
+            {
+                frm.Icon = this.Icon;
+                frm.ShowDialog(this);
+            }
         }
         private void menuReportForDivision_Click(object sender, EventArgs e)
         {
@@ -182,7 +189,7 @@ namespace MissionTime.Forms
             EnableDoubleBuffering(dgvMain);
 
             dgvMain.Columns.Clear();
-            dgvMain.Columns.Add(new DataGridViewTextBoxColumn{ Name = "EPHId", DataPropertyName = "EPHId", Visible = false, Frozen = true });
+            dgvMain.Columns.Add(new DataGridViewTextBoxColumn { Name = "EPHId", DataPropertyName = "EPHId", Visible = false, Frozen = true });
             dgvMain.Columns.Add(new DataGridViewTextBoxColumn { Name = "Department", HeaderText = "Подразделение", DataPropertyName = "Department", Frozen = true, Visible = false });
             dgvMain.Columns.Add(new DataGridViewTextBoxColumn { Name = "Position", HeaderText = "Должность", DataPropertyName = "Position", Frozen = true, Visible = false });
             dgvMain.Columns.Add(new DataGridViewTextBoxColumn { Name = "EmployeeId", DataPropertyName = "EmployeeId", Visible = false, Frozen = true });
@@ -685,6 +692,11 @@ namespace MissionTime.Forms
                 MessageBox.Show("Не удалось открыть папку с отчетами:\n" + ex.Message,
                     "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
         }
     }
     public static class AboutDialog

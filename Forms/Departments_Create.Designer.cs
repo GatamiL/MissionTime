@@ -34,6 +34,8 @@
             this.tbName = new System.Windows.Forms.TextBox();
             this.btnCancel = new System.Windows.Forms.Button();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.cbResp = new System.Windows.Forms.ComboBox();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -53,7 +55,7 @@
             this.btnCreate.Location = new System.Drawing.Point(4, 4);
             this.btnCreate.Margin = new System.Windows.Forms.Padding(4);
             this.btnCreate.Name = "btnCreate";
-            this.btnCreate.Size = new System.Drawing.Size(205, 26);
+            this.btnCreate.Size = new System.Drawing.Size(332, 26);
             this.btnCreate.TabIndex = 1;
             this.btnCreate.Text = "Создать";
             this.btnCreate.UseVisualStyleBackColor = true;
@@ -78,17 +80,17 @@
             this.tbName.Margin = new System.Windows.Forms.Padding(4);
             this.tbName.Multiline = true;
             this.tbName.Name = "tbName";
-            this.tbName.Size = new System.Drawing.Size(427, 39);
+            this.tbName.Size = new System.Drawing.Size(680, 96);
             this.tbName.TabIndex = 11;
             // 
             // btnCancel
             // 
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnCancel.Location = new System.Drawing.Point(217, 4);
+            this.btnCancel.Location = new System.Drawing.Point(344, 4);
             this.btnCancel.Margin = new System.Windows.Forms.Padding(4);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(206, 26);
+            this.btnCancel.Size = new System.Drawing.Size(332, 26);
             this.btnCancel.TabIndex = 4;
             this.btnCancel.Text = "Отмена";
             this.btnCancel.UseVisualStyleBackColor = true;
@@ -103,13 +105,34 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Controls.Add(this.btnCreate, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.btnCancel, 1, 0);
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(13, 119);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(13, 222);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(427, 34);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(680, 34);
             this.tableLayoutPanel1.TabIndex = 13;
+            // 
+            // cbResp
+            // 
+            this.cbResp.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cbResp.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbResp.FormattingEnabled = true;
+            this.cbResp.Location = new System.Drawing.Point(137, 191);
+            this.cbResp.Name = "cbResp";
+            this.cbResp.Size = new System.Drawing.Size(556, 24);
+            this.cbResp.TabIndex = 14;
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(16, 193);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(115, 20);
+            this.checkBox1.TabIndex = 16;
+            this.checkBox1.Text = "Отвественный:";
+            this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // Departments_Create
             // 
@@ -117,13 +140,15 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(453, 166);
+            this.ClientSize = new System.Drawing.Size(706, 269);
+            this.Controls.Add(this.checkBox1);
+            this.Controls.Add(this.cbResp);
             this.Controls.Add(this.lblParent);
             this.Controls.Add(this.lblType);
             this.Controls.Add(this.tbName);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Departments_Create";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Создать подразделение";
@@ -141,5 +166,7 @@
         private System.Windows.Forms.TextBox tbName;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.ComboBox cbResp;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }

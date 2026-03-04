@@ -366,20 +366,34 @@ ORDER BY Name;", prms.ToArray());
         public DataTable Departments_List()
         {
             return Query(
-                @"SELECT Id, ParentId, Name, Level
-          FROM Departments
-          ORDER BY Level, SortOrder, Name;");
+                @"SELECT 
+                    d.Id, 
+                    d.ParentId, 
+                    d.Name, 
+                    d.Level,
+                    d.ResponsibleId,
+                    e.Fio AS ResponsibleFio
+                  FROM Departments d
+                  LEFT JOIN Employees e ON d.ResponsibleId = e.Id
+                  ORDER BY d.Level, d.SortOrder, d.Name;");
         }
-        public DataTable Departments_ListOnlyLevel3()
+        public DataTable Departments_ListActiveForMonth(int year, int month)
         {
-            return Query(@"
-        SELECT 
-            Id,
-            Name AS DisplayName
-        FROM Departments
-        WHERE Level = 3
-        ORDER BY Name;
-    ");
+            DateTime monthStart = new DateTime(year, month, 1);
+            DateTime monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+            string sql = @"
+                SELECT DISTINCT d.Id, d.Name AS DisplayName
+                FROM Departments d
+                INNER JOIN EmployeePositionsHistory eph ON d.Id = eph.DepartmentId
+                WHERE d.Level = 3 
+                  AND date(eph.StartDate) <= date(@monthEnd)
+                  AND (eph.EndDate IS NULL OR date(eph.EndDate) >= date(@monthStart))
+                ORDER BY d.Name";
+
+            return Query(sql,
+                new System.Data.SQLite.SQLiteParameter("@monthStart", monthStart.ToString("yyyy-MM-dd")),
+                new System.Data.SQLite.SQLiteParameter("@monthEnd", monthEnd.ToString("yyyy-MM-dd")));
         }
         public DataTable Departments_ListForComboAnyLevel()
         {
@@ -477,7 +491,7 @@ ORDER BY SortPath;",
 
             return outDt;
         }
-        public long Department_Create(string name, DepartmentLevel level, long? parentId)
+        public long Department_Create(string name, DepartmentLevel level, long? parentId, long? responsibleId = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Name is empty");
@@ -491,27 +505,32 @@ ORDER BY SortPath;",
             using (var conn = OpenConnection())
             using (var cmd = conn.CreateCommand())
             {
+                // --- ДОБАВИЛИ ResponsibleId В ЗАПРОС ---
                 cmd.CommandText =
-                    @"INSERT INTO Departments (ParentId, Name, Level, SortOrder)
-              VALUES (@parent, @name, @level, 0);
+                    @"INSERT INTO Departments (ParentId, Name, Level, SortOrder, ResponsibleId)
+              VALUES (@parent, @name, @level, 0, @resp);
               SELECT last_insert_rowid();";
 
                 cmd.Parameters.AddWithValue("@parent", parentId.HasValue ? (object)parentId.Value : DBNull.Value);
                 cmd.Parameters.AddWithValue("@name", name.Trim());
                 cmd.Parameters.AddWithValue("@level", (int)level);
 
+                // --- ПЕРЕДАЕМ ПАРАМЕТР ОТВЕТСТВЕННОГО ---
+                cmd.Parameters.AddWithValue("@resp", responsibleId.HasValue ? (object)responsibleId.Value : DBNull.Value);
+
                 return (long)cmd.ExecuteScalar();
             }
         }
-        public int Department_Update(long id, string newName)
+        public int Department_Update(long id, string newName, long? responsibleId = null)
         {
             if (string.IsNullOrWhiteSpace(newName))
                 throw new ArgumentException("newName empty");
 
             return Execute(
-                "UPDATE Departments SET Name=@name WHERE Id=@id;",
-                new SQLiteParameter("@name", newName.Trim()),
-                new SQLiteParameter("@id", id)
+                "UPDATE Departments SET Name=@name, ResponsibleId=@resp WHERE Id=@id;",
+                new System.Data.SQLite.SQLiteParameter("@name", newName.Trim()),
+                new System.Data.SQLite.SQLiteParameter("@resp", responsibleId.HasValue ? (object)responsibleId.Value : DBNull.Value),
+                new System.Data.SQLite.SQLiteParameter("@id", id)
             );
         }
         public int Department_Delete(long id)
@@ -1344,21 +1363,37 @@ LIMIT 1;",
         {
             var dt = Query(@"
 SELECT
-  d3.Name AS DepartmentName,
-  d2.Name AS ComplexName
-FROM Departments d3
-LEFT JOIN Departments d2 ON d2.Id = d3.ParentId
-WHERE d3.Id = @id
+  d1.Name AS TargetName,
+  d2.Name AS ParentName,
+  d3.Name AS GrandParentName
+FROM Departments d1
+LEFT JOIN Departments d2 ON d2.Id = d1.ParentId
+LEFT JOIN Departments d3 ON d3.Id = d2.ParentId
+WHERE d1.Id = @id
 LIMIT 1;",
                 new SQLiteParameter("@id", departmentLevel3Id));
 
             if (dt.Rows.Count == 0)
                 throw new InvalidOperationException("Department not found: " + departmentLevel3Id);
 
-            return (
-                Convert.ToString(dt.Rows[0]["ComplexName"]) ?? "",
-                Convert.ToString(dt.Rows[0]["DepartmentName"]) ?? ""
-            );
+            string target = Convert.ToString(dt.Rows[0]["TargetName"]) ?? "";
+            string parent = Convert.ToString(dt.Rows[0]["ParentName"]) ?? "";
+            string grandParent = Convert.ToString(dt.Rows[0]["GrandParentName"]) ?? "";
+
+            // По умолчанию предполагаем, что формируем отчет по Отделу
+            string complexName = parent;
+            string departmentName = target;
+
+            // УМНАЯ ПРОВЕРКА: Если выбранное подразделение — это Группа
+            // (в названии есть "групп" или родитель называется "отдел")
+            if (target.ToLower().Contains("групп") || parent.ToLower().Contains("отдел"))
+            {
+                // Сдвигаем иерархию на уровень выше
+                complexName = grandParent; // Комплекс теперь "дедушка"
+                departmentName = $"{parent} {target}".Trim(); // Склеиваем: <Отдел> <Группа>
+            }
+
+            return (complexName, departmentName);
         }
         public DataTable Employee_AssignmentsForPeriod(long rootDepartmentId, DateTime periodStart, DateTime periodEnd, bool includeFired)
         {
@@ -1585,5 +1620,26 @@ ORDER BY
     ");
         }
         #endregion
+        public HashSet<DateTime> Timesheet_GetActiveDatesForProgram(int programId)
+        {
+            var activeDates = new HashSet<DateTime>();
+
+            // Убедись, что таблица и колонки называются именно так (TimesheetEntry, Minutes и т.д.)
+            var dtHours = Query(
+                @"SELECT DISTINCT WorkDate 
+                  FROM TimesheetEntry 
+                  WHERE ProgramId = @p AND Minutes > 0",
+                new System.Data.SQLite.SQLiteParameter("@p", programId));
+
+            foreach (DataRow r in dtHours.Rows)
+            {
+                if (DateTime.TryParse(r["WorkDate"].ToString(), out DateTime wd))
+                {
+                    activeDates.Add(wd.Date);
+                }
+            }
+
+            return activeDates;
+        }
     }
 }

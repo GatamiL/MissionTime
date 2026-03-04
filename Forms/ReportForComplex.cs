@@ -55,16 +55,24 @@ namespace MissionTime.Forms
                 long programId = Convert.ToInt64(cbProgram.SelectedValue);
                 string complexName = cbComplex.Text;
 
-                var periodObj = cbPeriod.SelectedItem;
-                DateTime periodStart = (DateTime)periodObj.GetType().GetProperty("Start").GetValue(periodObj);
-                DateTime periodEnd = (DateTime)periodObj.GetType().GetProperty("End").GetValue(periodObj);
+                // Используем dynamic для удобства (как в форме отдела)
+                dynamic periodObj = cbPeriod.SelectedItem;
+                DateTime periodStart = periodObj.Start;
+                DateTime periodEnd = periodObj.End;
 
                 string exeDir = AppDomain.CurrentDomain.BaseDirectory;
                 string templatePath = Path.Combine(exeDir, "Templates", "GeneralReportTemplate.xlsx");
 
                 var depNames = _db.Department_GetComplexAndDepartmentNames(complexId);
                 string periodPart = $"{periodStart:dd.MM}-{periodEnd:dd.MM}.{cbMonth.SelectedValue:D2}.{cbYear.SelectedItem}";
-                string fileName = ExcelComplexUtils.SanitizeFileName($"{depNames.ComplexName} - {cbProgram.Text} - {periodPart}.xlsx");
+
+                // --- НОВАЯ УМНАЯ ЛОГИКА КОРОТКИХ ИМЕН ---
+                // Используем ту же утилиту из ExcelDepartmentUtils
+                string shortComplex = ExcelDepartmentUtils.GetShortDepartmentName(depNames.ComplexName);
+                string progName = cbProgram.Text;
+                string shortProg = progName.Length > 30 ? progName.Substring(0, 30).Trim() + ".." : progName;
+
+                string fileName = ExcelComplexUtils.SanitizeFileName($"{shortComplex} - {shortProg} - {periodPart}.xlsx");
                 string outPath = Path.Combine(exeDir, "Reports", fileName);
 
                 ExcelComplexUtils.GenerateReport(
@@ -78,7 +86,6 @@ namespace MissionTime.Forms
                     periodEnd
                 );
 
-                // Тот самый наш красивый диалог!
                 ReportResultDialog.Show(outPath);
             }
             catch (Exception ex)
@@ -227,9 +234,8 @@ namespace MissionTime.Forms
             cbPeriod.Items.Clear();
             cbPeriod.Enabled = false;
 
-            if (!cbProgram.Enabled) return;
-            if (cbYear.SelectedItem == null || cbMonth.SelectedValue == null) return;
-            if (cbProgram.SelectedValue == null || cbProgram.SelectedValue == DBNull.Value) return;
+            if (!cbProgram.Enabled || cbYear.SelectedItem == null || cbMonth.SelectedValue == null || cbProgram.SelectedValue == null)
+                return;
 
             int programId = Convert.ToInt32(cbProgram.SelectedValue);
             if (programId <= 0) return;
@@ -237,61 +243,23 @@ namespace MissionTime.Forms
             int year = Convert.ToInt32(cbYear.SelectedItem);
             int month = Convert.ToInt32(cbMonth.SelectedValue);
 
-            var prog = _db.Programs_GetById(programId);
+            var prog = _db.Program_GetInfo(programId);
             if (!prog.HasValue) return;
 
-            DateTime monthStart = new DateTime(year, month, 1);
-            DateTime monthEnd = monthStart.AddMonths(1).AddDays(-1);
+            DateTime startDate = prog.Value.Start;
 
-            DateTime programStart = prog.Value.StartDate.Date;
-            DateTime programEnd = prog.Value.EndDate.Date;
+            // --- ИСПОЛЬЗУЕМ НАШ НОВЫЙ КЛАСС PERIOD CALCULATOR ---
+            var activeDates = _db.Timesheet_GetActiveDatesForProgram(programId);
+            var activeWeeks = PeriodCalculator.GetActiveWeeks(startDate, year, month, activeDates);
 
-            // Пересечение программы с месяцем
-            DateTime start = programStart > monthStart ? programStart : monthStart;
-            DateTime end = programEnd < monthEnd ? programEnd : monthEnd;
-            if (start > end) return;
+            if (activeWeeks.Count == 0) return;
 
-            // --- 1) Получаем недели, где реально есть данные в TimesheetEntry ---
-            var allWeeksDt = _db.TimesheetEntry_WeeksWithHoursForProgram(programId);
-
-            var weekNo = new Dictionary<DateTime, int>();
-            int n = 0;
-
-            foreach (DataRow r in allWeeksDt.Rows)
+            var list = activeWeeks.Select(w => new
             {
-                var s = Convert.ToString(r["WeekMonday"]);
-                if (string.IsNullOrWhiteSpace(s)) continue;
-
-                DateTime monday = DateTime.Parse(s).Date;
-                n++;
-                weekNo[monday] = n;
-            }
-
-            if (weekNo.Count == 0) return;
-
-            // --- 2) Строим ровные периоды по 7 дней ---
-            var list = new List<object>();
-
-            DateTime firstMonday = start.AddDays(-(((int)start.DayOfWeek + 6) % 7)).Date;
-            DateTime currentStart = firstMonday;
-
-            while (currentStart <= end)
-            {
-                DateTime currentEnd = currentStart.AddDays(6);
-
-                if (weekNo.TryGetValue(currentStart, out int weekNumber))
-                {
-                    list.Add(new
-                    {
-                        Start = currentStart,
-                        End = currentEnd,
-                        Display = $"{weekNumber}) {currentStart:dd.MM} - {currentEnd:dd.MM}"
-                    });
-                }
-                currentStart = currentEnd.AddDays(1);
-            }
-
-            if (list.Count == 0) return;
+                Start = w.Start,
+                End = w.End,
+                Display = $"{w.WeekNum}) {w.Start:dd.MM} - {w.End:dd.MM}"
+            }).ToList();
 
             cbPeriod.DisplayMember = "Display";
             cbPeriod.ValueMember = "Start";

@@ -33,6 +33,8 @@
             this.btnCancel = new System.Windows.Forms.Button();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.label1 = new System.Windows.Forms.Label();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.cbResp = new System.Windows.Forms.ComboBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -45,7 +47,7 @@
             this.tbName.Margin = new System.Windows.Forms.Padding(4);
             this.tbName.Multiline = true;
             this.tbName.Name = "tbName";
-            this.tbName.Size = new System.Drawing.Size(381, 44);
+            this.tbName.Size = new System.Drawing.Size(381, 118);
             this.tbName.TabIndex = 8;
             // 
             // btnChange
@@ -82,7 +84,7 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Controls.Add(this.btnChange, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.btnCancel, 1, 0);
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(17, 81);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(17, 185);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
@@ -100,18 +102,39 @@
             this.label1.TabIndex = 9;
             this.label1.Text = "Изменить имя:";
             // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(17, 156);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(116, 20);
+            this.checkBox1.TabIndex = 11;
+            this.checkBox1.Text = "Ответственный";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            // 
+            // cbResp
+            // 
+            this.cbResp.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbResp.FormattingEnabled = true;
+            this.cbResp.Location = new System.Drawing.Point(139, 154);
+            this.cbResp.Name = "cbResp";
+            this.cbResp.Size = new System.Drawing.Size(260, 24);
+            this.cbResp.TabIndex = 12;
+            // 
             // Departments_Edit
             // 
             this.AcceptButton = this.btnChange;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(411, 136);
+            this.ClientSize = new System.Drawing.Size(411, 240);
+            this.Controls.Add(this.cbResp);
+            this.Controls.Add(this.checkBox1);
             this.Controls.Add(this.tbName);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.label1);
             this.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Departments_Edit";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Изменить подразделение";
@@ -128,5 +151,7 @@
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.ComboBox cbResp;
     }
 }

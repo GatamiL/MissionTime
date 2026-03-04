@@ -75,7 +75,7 @@
             // 
             this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnClose.Location = new System.Drawing.Point(917, 511);
+            this.btnClose.Location = new System.Drawing.Point(997, 479);
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(75, 23);
             this.btnClose.TabIndex = 34;
@@ -100,7 +100,7 @@
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(979, 25);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(1059, 25);
             this.tableLayoutPanel3.TabIndex = 33;
             // 
             // label2
@@ -126,7 +126,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(493, 0);
+            this.label3.Location = new System.Drawing.Point(533, 0);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(50, 16);
@@ -136,7 +136,7 @@
             // lblMonth
             // 
             this.lblMonth.AutoSize = true;
-            this.lblMonth.Location = new System.Drawing.Point(613, 0);
+            this.lblMonth.Location = new System.Drawing.Point(653, 0);
             this.lblMonth.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblMonth.Name = "lblMonth";
             this.lblMonth.Size = new System.Drawing.Size(56, 16);
@@ -197,7 +197,7 @@
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 1;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(979, 25);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(1059, 25);
             this.tableLayoutPanel2.TabIndex = 32;
             // 
             // tableLayoutPanel1
@@ -213,7 +213,7 @@
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(979, 25);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1059, 25);
             this.tableLayoutPanel1.TabIndex = 31;
             // 
             // label5
@@ -237,7 +237,7 @@
             this.dgvTimeSheet.Location = new System.Drawing.Point(14, 170);
             this.dgvTimeSheet.Margin = new System.Windows.Forms.Padding(4);
             this.dgvTimeSheet.Name = "dgvTimeSheet";
-            this.dgvTimeSheet.Size = new System.Drawing.Size(978, 334);
+            this.dgvTimeSheet.Size = new System.Drawing.Size(1058, 302);
             this.dgvTimeSheet.TabIndex = 29;
             // 
             // cbProgram
@@ -249,7 +249,7 @@
             this.cbProgram.Location = new System.Drawing.Point(98, 105);
             this.cbProgram.Margin = new System.Windows.Forms.Padding(4);
             this.cbProgram.Name = "cbProgram";
-            this.cbProgram.Size = new System.Drawing.Size(893, 24);
+            this.cbProgram.Size = new System.Drawing.Size(973, 24);
             this.cbProgram.TabIndex = 28;
             // 
             // MainForm_edit
@@ -257,7 +257,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnClose;
-            this.ClientSize = new System.Drawing.Size(1004, 546);
+            this.ClientSize = new System.Drawing.Size(1084, 514);
             this.Controls.Add(this.btnDelete);
             this.Controls.Add(this.btnAdd);
             this.Controls.Add(this.btnClose);

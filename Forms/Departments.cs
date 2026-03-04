@@ -53,13 +53,14 @@ namespace MissionTime.Forms
                 parentDisplay = selected.Text;
             }
 
-            using (var dlg = new Departments_Create(parentId, parentLevel, parentDisplay))
+            using (var dlg = new Departments_Create(_db, parentId, parentLevel, parentDisplay))
             {
                 dlg.Icon = this.Icon;
                 if (dlg.ShowDialog(this) != DialogResult.OK)
                     return;
 
-                _db.Department_Create(dlg.DepartmentName, dlg.NewLevel, dlg.ParentId);
+                // --- ПЕРЕДАЕМ dlg.ResponsibleId В БАЗУ ДАННЫХ ---
+                _db.Department_Create(dlg.DepartmentName, dlg.NewLevel, dlg.ParentId, dlg.ResponsibleId);
                 LoadDepartmentsTree();
             }
         }
@@ -75,19 +76,22 @@ namespace MissionTime.Forms
             }
 
             long id = (long)node.Tag;
-            string currentName = node.Text;
 
-            using (var dlg = new Departments_Edit(currentName))
+            // Вызываем форму, передаем базу и ID (имя она вытащит сама)
+            using (var dlg = new Departments_Edit(_db, id))
             {
                 dlg.Icon = this.Icon;
                 if (dlg.ShowDialog(this) != DialogResult.OK)
                     return;
 
                 string newName = dlg.NewName;
+                long? newRespId = dlg.ResponsibleId; // Забираем ответственного
 
                 try
                 {
-                    int affected = _db.Department_Update(id, newName);
+                    // Обновляем запись в базе
+                    int affected = _db.Department_Update(id, newName, newRespId);
+
                     if (affected <= 0)
                     {
                         MessageBox.Show("Запись не была обновлена (возможно, её уже удалили).", "Предупреждение",
@@ -179,22 +183,32 @@ namespace MissionTime.Forms
                 tvDepartments.Nodes.Clear();
 
                 DataTable dt = _db.Departments_List();
-
                 var nodesById = new Dictionary<long, TreeNode>();
 
+                // ШАГ 1: Создаем все узлы в памяти и генерируем красивый текст
                 foreach (DataRow row in dt.Rows)
                 {
                     long id = Convert.ToInt64(row["Id"]);
                     string name = Convert.ToString(row["Name"]);
-                    int level = Convert.ToInt32(row["Level"]);
 
-                    string text = name;
+                    // Достаем ФИО ответственного
+                    string respFio = "";
+                    if (dt.Columns.Contains("ResponsibleFio") && row["ResponsibleFio"] != DBNull.Value)
+                    {
+                        respFio = Convert.ToString(row["ResponsibleFio"]);
+                    }
+
+                    // Формируем красивый текст
+                    string text = string.IsNullOrWhiteSpace(respFio)
+                        ? name
+                        : $"{name} [Отв: {respFio}]";
 
                     var node = new TreeNode(text);
                     node.Tag = id;
                     nodesById[id] = node;
                 }
 
+                // ШАГ 2: Собираем иерархию и добавляем в дерево
                 foreach (DataRow row in dt.Rows)
                 {
                     long id = Convert.ToInt64(row["Id"]);
@@ -204,17 +218,17 @@ namespace MissionTime.Forms
 
                     if (parentObj == DBNull.Value)
                     {
+                        // Если родителя нет — это самый верхний уровень, кидаем в корень дерева
                         tvDepartments.Nodes.Add(node);
                     }
                     else
                     {
+                        // Если родитель есть — прикрепляем узел к нему
                         long parentId = Convert.ToInt64(parentObj);
-
-                        TreeNode parentNode;
-                        if (nodesById.TryGetValue(parentId, out parentNode))
+                        if (nodesById.TryGetValue(parentId, out TreeNode parentNode))
                             parentNode.Nodes.Add(node);
                         else
-                            tvDepartments.Nodes.Add(node);
+                            tvDepartments.Nodes.Add(node); // На всякий случай, если родитель не найден
                     }
                 }
 

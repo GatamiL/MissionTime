@@ -19,11 +19,13 @@ namespace MissionTime
                     new ColumnDef("ParentId", "INTEGER"),
                     new ColumnDef("Name", "TEXT", notNull: true),
                     new ColumnDef("Level", "INTEGER", notNull: true),
-                    new ColumnDef("SortOrder", "INTEGER", notNull: true)
+                    new ColumnDef("SortOrder", "INTEGER", notNull: true),
+                    new ColumnDef("ResponsibleId", "INTEGER")
                 },
                 new[]
                 {
-                    "FOREIGN KEY([ParentId]) REFERENCES [Departments]([Id])"
+                    "FOREIGN KEY([ParentId]) REFERENCES [Departments]([Id])",
+                    "FOREIGN KEY([ResponsibleId]) REFERENCES [Employees]([Id]) ON DELETE SET NULL"
                 }
             ),
             new TableDef(
