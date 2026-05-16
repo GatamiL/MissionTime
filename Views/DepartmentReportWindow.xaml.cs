@@ -108,7 +108,7 @@ namespace MissionTime.Views
             var activeDeps = new System.Collections.Generic.List<ActiveDepItem>();
             foreach (var d in allItems)
             {
-                if (d.Level == 2 && d.EmpCount > 0)
+                if (d.Level == 3 && d.EmpCount > 0)
                 {
                     activeDeps.Add(new ActiveDepItem { Id = d.Id, Name = d.ShortName, ResponsibleId = d.ResponsibleId });
                 }
@@ -328,7 +328,7 @@ namespace MissionTime.Views
 
                 if (MissionMessageBox.Show(this, "Успех", $"Отчет по отделу успешно сформирован!\nОткрыть файл?\n\n{outPath}", true) == true)
                 {
-                    System.Diagnostics.Process.Start(outPath);
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(outPath) { UseShellExecute = true });
                 }
             }
             catch (System.Exception ex)

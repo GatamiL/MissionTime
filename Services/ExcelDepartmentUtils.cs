@@ -130,7 +130,7 @@ namespace MissionTime.Services
                     eph.Id as EphId,
                     e.Fio,
                     p.Name as PositionName,
-                    (SELECT d.Name FROM Departments d WHERE d.Id = eph.DepartmentId AND d.Level = 4 LIMIT 1) as GroupName,
+                    (SELECT d.Name FROM Departments d WHERE d.Id = eph.DepartmentId AND d.Level >= 4 LIMIT 1) as GroupName,
                     w.Id as WorkId,
                     w.SpecialCode,
                     w.Name as WorkName,

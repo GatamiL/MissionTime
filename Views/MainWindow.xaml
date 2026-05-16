@@ -131,6 +131,7 @@
                 <MenuItem Header="Отчет за отдел" Click="ShowReportForDepartment_Click"/>
                 <MenuItem Header="Отчет за комплекс" Click="ShowReportForDivision_Click"/>
                 <MenuItem Header="Папка с отчетами" Click="ShowReportDirectory_Click"/>
+                <MenuItem Header="Конвертировать отчеты в PDF" Click="ConvertReportsToPdf_Click"/>
             </MenuItem>
             <MenuItem Header="Справка">
                 <MenuItem Header="О программе" Click="ShowAbout_Click"/>
@@ -223,7 +224,7 @@
           CellStyle="{StaticResource DayCellStyle}" 
           SelectionMode="Extended"
           SelectionUnit="Cell" 
-          FrozenColumnCount="1" 
+          FrozenColumnCount="2" 
           CanUserReorderColumns="False"
           EnableColumnVirtualization="True" 
           RowStyle="{StaticResource DayRowStyle}"

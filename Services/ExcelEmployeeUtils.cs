@@ -117,8 +117,7 @@ namespace MissionTime.Services
             string sqlGroups = @"
                 SELECT h.Id as EphId, 
                        CASE 
-                           WHEN d.Level = 3 THEN d.Name
-                           WHEN d.Level = 4 THEN (SELECT Name FROM Departments WHERE Id = d.ParentId)
+                           WHEN d.Level >= 3 THEN d.Name
                            ELSE d.Name
                        END as GroupName
                 FROM EmployeePositionsHistory h

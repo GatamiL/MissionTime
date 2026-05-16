@@ -703,9 +703,12 @@ namespace MissionTime.ViewModels
         {
             foreach (var item in source)
             {
-                item.DisplayName = indent + item.Name + $" ({item.EmpCount})";
-                dest.Add(item);
-                FillFlat(item.Children, dest, indent + "    ");
+                if (item.EmpCount > 0)
+                {
+                    item.DisplayName = indent + item.Name + $" ({item.EmpCount})";
+                    dest.Add(item);
+                    FillFlat(item.Children, dest, indent + "    ");
+                }
             }
         }
 
@@ -782,6 +785,94 @@ namespace MissionTime.ViewModels
                 _dialogService.ShowMessage("Ошибка", $"Не удалось открыть папку: {ex.Message}");
             }
         }
+
+        public async void ConvertReportsToPdf()
+        {
+            try
+            {
+                string reportsDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports");
+                if (!System.IO.Directory.Exists(reportsDir))
+                {
+                    _dialogService.ShowMessage("Внимание", "Папка с отчетами не найдена.");
+                    return;
+                }
+
+                var files = System.IO.Directory.GetFiles(reportsDir, "*.xlsx", System.IO.SearchOption.AllDirectories);
+                if (files.Length == 0)
+                {
+                    _dialogService.ShowMessage("Внимание", "Excel файлы не найдены в папке Reports.");
+                    return;
+                }
+
+                IsBusy = true;
+                StatusText = $"Начинаю конвертацию {files.Length} файлов...";
+
+                await System.Threading.Tasks.Task.Run(() =>
+                {
+                    Type excelType = Type.GetTypeFromProgID("Excel.Application");
+                    if (excelType == null)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                            _dialogService.ShowMessage("Ошибка", "Microsoft Excel не установлен на этом компьютере."));
+                        return;
+                    }
+
+                    dynamic excel = Activator.CreateInstance(excelType);
+                    try
+                    {
+                        excel.Visible = false;
+                        excel.DisplayAlerts = false;
+                        excel.ScreenUpdating = false;
+                        excel.Interactive = false;
+
+                        int count = 0;
+                        int converted = 0;
+                        foreach (var file in files)
+                        {
+                            count++;
+                            string pdfPath = System.IO.Path.ChangeExtension(file, ".pdf");
+                            if (!System.IO.File.Exists(pdfPath))
+                            {
+                                converted++;
+                                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                                    StatusText = $"Конвертация ({count}/{files.Length}): {System.IO.Path.GetFileName(file)}");
+
+                                var workbook = excel.Workbooks.Open(file);
+                                try
+                                {
+                                    // 0 = xlTypePDF, 8-й параметр (false) = OpenAfterPublish
+                                    workbook.ExportAsFixedFormat(0, pdfPath, 0, true, false, System.Reflection.Missing.Value, System.Reflection.Missing.Value, false);
+                                }
+                                finally
+                                {
+                                    workbook.Close(false);
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        excel.Interactive = true;
+                        excel.ScreenUpdating = true;
+                        excel.Quit();
+                        System.Runtime.InteropServices.Marshal.ReleaseComObject(excel);
+                    }
+                });
+
+                StatusText = "Конвертация завершена";
+                _dialogService.ShowMessage("Успех", "Все недостающие PDF файлы успешно созданы рядом с оригиналами.");
+            }
+            catch (Exception ex)
+            {
+                StatusText = "Ошибка конвертации";
+                _dialogService.ShowMessage("Ошибка", $"Не удалось выполнить конвертацию: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
         public void ShowAbout() => _dialogService.ShowAboutWindow();
 
         public void AddWork(DataRowView selectedRow)

@@ -705,6 +705,7 @@ namespace MissionTime.Views
         private void ShowReportForDepartment_Click(object sender, RoutedEventArgs e) => _vm.ShowReportForDepartment();
         private void ShowReportForDivision_Click(object sender, RoutedEventArgs e) => _vm.ShowReportForDivision();
         private void ShowReportDirectory_Click(object sender, RoutedEventArgs e) => _vm.ShowReportDirectory();
+        private void ConvertReportsToPdf_Click(object sender, RoutedEventArgs e) => _vm.ConvertReportsToPdf();
         private void ShowAbout_Click(object sender, RoutedEventArgs e) => _vm.ShowAbout();
         
         private void ReportDept_Click(object sender, RoutedEventArgs e) => _vm.ShowReportDept();
