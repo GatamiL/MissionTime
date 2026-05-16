@@ -1,0 +1,74 @@
+<Window x:Class="MissionTime.Views.Employee_Transfer"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Перевод сотрудника" Height="550" Width="450"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Style="{StaticResource StandardWindow}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок с именем -->
+        <Border Grid.Row="0" Background="#F8F9FA" CornerRadius="5" Padding="10" Margin="0,0,0,15">
+            <StackPanel>
+                <TextBlock Text="Перевод сотрудника:" FontSize="12" Foreground="#6C757D"/>
+                <TextBlock x:Name="lblEmployeeName" Text="ФИО Сотрудника" FontSize="16" FontWeight="Bold" Foreground="#2C3E50"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Новая должность -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+            <TextBlock Text="Новая должность:" Style="{StaticResource StandardText}" Margin="0,0,0,5"/>
+            <ComboBox x:Name="cbPositions" DisplayMemberPath="Name" SelectedValuePath="Id"
+                       Style="{StaticResource StandardComboBox}"/>
+        </StackPanel>
+
+        <!-- Дата перевода -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,15">
+            <TextBlock Text="Дата вступления в силу:" Style="{StaticResource StandardText}" Margin="0,0,0,5"/>
+            <DatePicker x:Name="dpStartDate" FirstDayOfWeek="Monday" />
+        </StackPanel>
+
+        <DockPanel Grid.Row="3" Margin="0,0,0,15">
+            <TextBlock DockPanel.Dock="Top" Style="{StaticResource StandardText}" Margin="0,0,0,5">
+                <Run Text="Новое подразделение (текущее: "/>
+                <Run x:Name="runCurrentDep" Text="-" FontWeight="Bold" Foreground="#0078D7"/>
+                <Run Text="):"/>
+            </TextBlock>
+
+            <Border BorderBrush="#CED4DA" BorderThickness="1" CornerRadius="4">
+                <TreeView x:Name="tvDepartments" BorderThickness="0">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                            <Setter Property="IsExpanded" Value="True" />
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                            <TextBlock Text="{Binding Name}" Margin="2"/>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </Border>
+        </DockPanel>
+
+        <!-- Примечание -->
+        <StackPanel Grid.Row="4" Margin="0,0,0,20">
+            <TextBlock Text="Основание (приказ, записка):" Style="{StaticResource StandardText}" Margin="0,0,0,5"/>
+            <TextBox x:Name="txtNote" Style="{StaticResource StandardTextBox}"/>
+        </StackPanel>
+
+        <!-- Кнопки (растянуты пополам) -->
+        <UniformGrid Grid.Row="5" Columns="2">
+            <Button Content="Перевести" Margin="0,0,5,0" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="btnSave_Click"/>
+            <Button Content="Отмена" Margin="5,0,0,0" Style="{StaticResource SecondaryButton}" IsCancel="True"/>
+        </UniformGrid>
+    </Grid>
+</Window>

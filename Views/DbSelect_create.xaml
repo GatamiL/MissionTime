@@ -1,0 +1,33 @@
+<Window x:Class="MissionTime.Views.DbSelect_create"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Новая база" Height="210" Width="350"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Style="{StaticResource StandardWindow}">
+    <Grid Margin="20">
+        <StackPanel>
+            <TextBlock Text="Введите имя новой базы данных:" 
+                       Style="{StaticResource StandardText}" Margin="0,0,0,10"/>
+
+            <TextBox x:Name="txtDbName" 
+                     Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}"
+                     Style="{StaticResource StandardTextBox}" 
+                     VerticalContentAlignment="Center"
+                     KeyDown="txtDbName_KeyDown"/>
+
+            <TextBlock Text="* расширение .db добавится автоматически" 
+                       Style="{StaticResource HintItalicText}" Margin="0,5,0,15"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Создать" Width="80" Margin="0,0,10,0"
+                        Style="{StaticResource PrimaryButton}" 
+                        Click="btnCreate_Click"
+                        IsDefault="True"/>
+                <Button Content="Отмена" Width="80" 
+                        Style="{StaticResource SecondaryButton}" 
+                        Click="btnCancel_Click"
+                        IsCancel="True"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

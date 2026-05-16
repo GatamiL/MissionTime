@@ -1,0 +1,71 @@
+﻿<Window x:Class="MissionTime.Views.MissionMessageBox"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MissionTime" Height="Auto" Width="400" 
+        SizeToContent="Height" 
+        Opacity="0"
+        Visibility="Visible"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" 
+        ResizeMode="NoResize" WindowStyle="None" AllowsTransparency="True" Background="Transparent">
+
+    <Window.RenderTransform>
+        <ScaleTransform x:Name="WindowScale" CenterX="200" CenterY="100"/>
+    </Window.RenderTransform>
+
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Window.Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                     From="0" To="1" Duration="0:0:0.2"/>
+
+                    <DoubleAnimation Storyboard.TargetName="WindowScale"
+                                     Storyboard.TargetProperty="ScaleX"
+                                     From="0.95" To="1" Duration="0:0:0.2">
+                        <DoubleAnimation.EasingFunction>
+                            <QuadraticEase EasingMode="EaseOut"/>
+                        </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+
+                    <DoubleAnimation Storyboard.TargetName="WindowScale"
+                                     Storyboard.TargetProperty="ScaleY"
+                                     From="0.95" To="1" Duration="0:0:0.2">
+                        <DoubleAnimation.EasingFunction>
+                            <QuadraticEase EasingMode="EaseOut"/>
+                        </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
+
+    <Border Background="White" CornerRadius="8" BorderBrush="#CED4DA" BorderThickness="1">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="txtTitle" Grid.Row="0" 
+                       Style="{StaticResource HeaderResultText}" FontSize="18" Margin="0,0,0,10"/>
+
+            <TextBlock x:Name="txtMessage" Grid.Row="1" 
+                       Style="{StaticResource StandardText}" Margin="0,0,0,20"/>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="btnOk" Content="ОК" Width="100" Margin="0,0,10,0"
+                        Style="{StaticResource PrimaryButton}" 
+                        Click="btnOk_Click"
+                        IsDefault="True"/>
+                <Button x:Name="btnCancel" Content="Нет" Width="90" 
+                        Style="{StaticResource SecondaryButton}" 
+                        Click="btnCancel_Click" 
+                        Visibility="Collapsed"
+                        IsCancel="True"/>
+
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

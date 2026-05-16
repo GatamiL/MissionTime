@@ -1,0 +1,102 @@
+<Window x:Class="MissionTime.Views.CardReportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Карточка учета трудозатрат" Height="410" Width="450"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        ShowInTaskbar="False" Style="{StaticResource StandardWindow}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Row 1: Year, Month -->
+            <RowDefinition Height="Auto"/> <!-- Row 2: Department -->
+            <RowDefinition Height="Auto"/> <!-- Row 3: Program, Period -->
+            <RowDefinition Height="Auto"/> <!-- Row 4: Executor, Reviewer -->
+            <RowDefinition Height="*"/>    <!-- Spacer -->
+            <RowDefinition Height="Auto"/> <!-- Row 5: Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Row 1: Год и Месяц -->
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Год:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbYear" SelectionChanged="OnDateChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Месяц:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbMonth" SelectionChanged="OnDateChanged">
+                    <ComboBoxItem Content="Январь"/>
+                    <ComboBoxItem Content="Февраль"/>
+                    <ComboBoxItem Content="Март"/>
+                    <ComboBoxItem Content="Апрель"/>
+                    <ComboBoxItem Content="Май"/>
+                    <ComboBoxItem Content="Июнь"/>
+                    <ComboBoxItem Content="Июль"/>
+                    <ComboBoxItem Content="Август"/>
+                    <ComboBoxItem Content="Сентябрь"/>
+                    <ComboBoxItem Content="Октябрь"/>
+                    <ComboBoxItem Content="Ноябрь"/>
+                    <ComboBoxItem Content="Декабрь"/>
+                </ComboBox>
+            </StackPanel>
+        </Grid>
+
+        <!-- Row 2: Подразделение -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+            <TextBlock Text="Подразделение:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+            <ComboBox x:Name="cbDepartment" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="cbDepartment_SelectionChanged"/>
+        </StackPanel>
+
+        <!-- Row 3: Программа и Период -->
+        <Grid Grid.Row="2" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Программа (Проект):" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbProgram" DisplayMemberPath="ShortName" SelectedValuePath="Id" SelectionChanged="cbProgram_SelectionChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Период:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbPeriod"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Row 4: Исполнитель и Проверяющий -->
+        <Grid Grid.Row="3" Margin="0,0,0,25">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Исполнитель:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbExecutor" 
+                          IsEditable="True" IsTextSearchEnabled="True" 
+                          DisplayMemberPath="Fio" SelectedValuePath="Id"
+                          SelectionChanged="cbExecutor_SelectionChanged"/>
+                <CheckBox x:Name="chkExecutorSign" Content="Вставить подпись" Margin="0,5,0,0" IsEnabled="False" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Проверяющий:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbReviewer" 
+                          IsEditable="True" IsTextSearchEnabled="True" 
+                          DisplayMemberPath="Fio" SelectedValuePath="Id"
+                          SelectionChanged="cbReviewer_SelectionChanged"/>
+                <CheckBox x:Name="chkReviewerSign" Content="Вставить подпись" Margin="0,5,0,0" IsEnabled="False" FontSize="11"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Row 5: Кнопки -->
+        <!-- Row 5: Кнопки (растянуты пополам) -->
+        <UniformGrid Grid.Row="5" Columns="2" VerticalAlignment="Bottom">
+            <Button Content="Сформировать" Margin="0,0,5,0" Style="{StaticResource PrimaryButton}" Click="btnGenerate_Click"/>
+            <Button Content="Закрыть" Margin="5,0,0,0" IsCancel="True" Style="{StaticResource StandardButton}" Click="btnClose_Click"/>
+        </UniformGrid>
+    </Grid>
+</Window>

@@ -1,0 +1,58 @@
+<Window x:Class="MissionTime.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="О программе" Height="410" Width="420"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Style="{StaticResource StandardWindow}">
+
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" VerticalAlignment="Center">
+            <!-- ИКОНКА -->
+            <Image Source="/Assets/app_icon.png" Width="80" Height="80" Margin="0,0,0,15"
+                   RenderOptions.BitmapScalingMode="HighQuality">
+                <Image.Effect>
+                    <DropShadowEffect BlurRadius="15" Opacity="0.1" ShadowDepth="2"/>
+                </Image.Effect>
+            </Image>
+
+            <!-- НАЗВАНИЕ -->
+            <TextBlock Text="MissionTime" 
+                       FontSize="28" FontWeight="Bold" Foreground="#212529" 
+                       HorizontalAlignment="Center" Margin="0,0,0,5"/>
+
+            <!-- ВЕРСИЯ -->
+            <TextBlock Text="v2.0.0 Stable" 
+                       FontSize="14" Foreground="#6C757D" 
+                       HorizontalAlignment="Center" Margin="0,0,0,15"/>
+
+            <!-- РАЗРАБОТЧИК -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                <TextBlock Text="Разработчик: " Foreground="#6C757D" FontSize="14"/>
+                <TextBlock Text="GatamiL" FontWeight="SemiBold" Foreground="#212529" FontSize="14"/>
+            </StackPanel>
+
+            <TextBlock Text="Разработано для учета трудозатрат" 
+                       HorizontalAlignment="Center" Foreground="#adb5bd" FontSize="12" FontStyle="Italic" Margin="0,0,0,20"/>
+
+            <!-- ГИТХАБ -->
+            <TextBlock HorizontalAlignment="Center">
+                <Hyperlink NavigateUri="https://github.com/GatamiL/MissionTime" RequestNavigate="Hyperlink_RequestNavigate">
+                    <TextBlock Text="GitHub Repository" FontSize="13"/>
+                </Hyperlink>
+            </TextBlock>
+        </StackPanel>
+
+        <!-- КНОПКА ЗАКРЫТЬ -->
+        <Button Grid.Row="1" Content="Закрыть" Width="120" Height="36"
+                Style="{StaticResource StandardButton}"
+                Click="Close_Click"
+                IsDefault="True" IsCancel="True"
+                HorizontalAlignment="Center" Margin="0,20,0,0"/>
+    </Grid>
+</Window>

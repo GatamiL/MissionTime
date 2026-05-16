@@ -1,0 +1,49 @@
+<Window x:Class="MissionTime.Views.ListOfProgram_Edit"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Редактирование программы" Height="420" Width="450"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Style="{StaticResource StandardWindow}" ShowInTaskbar="False">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- ShortName Label -->
+            <RowDefinition Height="Auto"/> <!-- ShortName Field -->
+            <RowDefinition Height="Auto"/> <!-- FullName Label -->
+            <RowDefinition Height="*"/>    <!-- FullName Field (STRETCHED) -->
+            <RowDefinition Height="Auto"/> <!-- Dates Grid -->
+            <RowDefinition Height="Auto"/> <!-- Buttons -->
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Краткое название:" Style="{StaticResource StandardText}" Margin="0,0,0,5"/>
+        <TextBox Grid.Row="1" x:Name="txtShortName" Style="{StaticResource StandardTextBox}" Margin="0,0,0,15"/>
+
+        <TextBlock Grid.Row="2" Text="Полное наименование:" Style="{StaticResource StandardText}" Margin="0,0,0,5"/>
+        <TextBox Grid.Row="3" x:Name="txtName" Style="{StaticResource StandardTextBox}" Margin="0,0,0,15"
+                 TextWrapping="Wrap" 
+                 AcceptsReturn="True" 
+                 VerticalScrollBarVisibility="Auto"
+                 VerticalContentAlignment="Top"
+                 Padding="5"/>
+
+        <Grid Grid.Row="4" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/> <!-- Separator -->
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Дата начала:" Style="{StaticResource StandardText}" Margin="0,0,0,5"/>
+                <DatePicker x:Name="dpStart" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Дата окончания:" Style="{StaticResource StandardText}" Margin="0,0,0,5"/>
+                <DatePicker x:Name="dpEnd" />
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Сохранить" Width="110" Click="btnSave_Click" Style="{StaticResource PrimaryButton}" IsDefault="True"/>
+            <Button Content="Отмена" Width="110" Margin="10,0,0,0" IsCancel="True" Style="{StaticResource SecondaryButton}"/>
+        </StackPanel>
+    </Grid>
+</Window>

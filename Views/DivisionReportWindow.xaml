@@ -1,0 +1,80 @@
+<Window x:Class="MissionTime.Views.DivisionReportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Отчет за комплекс" Height="330" Width="500"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        ShowInTaskbar="False" Style="{StaticResource StandardWindow}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Row 1: Year, Month -->
+            <RowDefinition Height="Auto"/> <!-- Row 2: Department (Division) -->
+            <RowDefinition Height="Auto"/> <!-- Row 3: Program, Period -->
+            <RowDefinition Height="*"/>    <!-- Spacer -->
+            <RowDefinition Height="Auto"/> <!-- Row 4: Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Row 1: Год и Месяц -->
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Год:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbYear" SelectionChanged="OnDateChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Месяц:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbMonth" SelectionChanged="OnDateChanged">
+                    <ComboBoxItem Content="Январь"/>
+                    <ComboBoxItem Content="Февраль"/>
+                    <ComboBoxItem Content="Март"/>
+                    <ComboBoxItem Content="Апрель"/>
+                    <ComboBoxItem Content="Май"/>
+                    <ComboBoxItem Content="Июнь"/>
+                    <ComboBoxItem Content="Июль"/>
+                    <ComboBoxItem Content="Август"/>
+                    <ComboBoxItem Content="Сентябрь"/>
+                    <ComboBoxItem Content="Октябрь"/>
+                    <ComboBoxItem Content="Ноябрь"/>
+                    <ComboBoxItem Content="Декабрь"/>
+                </ComboBox>
+            </StackPanel>
+        </Grid>
+
+        <!-- Row 2: Подразделение (Комплекс) -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+            <TextBlock Text="Подразделение (Комплекс):" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+            <ComboBox x:Name="cbDepartment" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="cbDepartment_SelectionChanged"/>
+        </StackPanel>
+
+        <!-- Row 3: Программа и Период -->
+        <Grid Grid.Row="2" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Программа (Проект):" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbProgram" DisplayMemberPath="ShortName" SelectedValuePath="Id" SelectionChanged="cbProgram_SelectionChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Период:" FontSize="12" Foreground="#6C757D" Margin="0,0,0,5"/>
+                <ComboBox x:Name="cbPeriod"/>
+            </StackPanel>
+        </Grid>
+
+
+        <!-- Подпись -->
+        <CheckBox x:Name="chkSign" Grid.Row="3" Content="Вставить подпись начальника комплекса" 
+                  Margin="0,0,0,10" IsEnabled="False" VerticalAlignment="Bottom" FontSize="12"/>
+
+        <!-- Row 4: Кнопки (растянуты пополам) -->
+        <UniformGrid Grid.Row="4" Columns="2" Margin="0,10,0,0" VerticalAlignment="Bottom">
+            <Button Content="Сформировать" Margin="0,0,5,0" Style="{StaticResource PrimaryButton}" Click="btnGenerate_Click"/>
+            <Button Content="Закрыть" Margin="5,0,0,0" IsCancel="True" Style="{StaticResource StandardButton}" Click="btnClose_Click"/>
+        </UniformGrid>
+    </Grid>
+</Window>

@@ -1,0 +1,65 @@
+<Window x:Class="MissionTime.Views.Departments"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Справочник подразделений" Height="500" Width="800"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Style="{StaticResource StandardWindow}">
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TreeView x:Name="tvDepartments" Grid.Row="0"
+          ItemsSource="{Binding RootDepartments}"
+          SelectedItemChanged="tvDepartments_SelectedItemChanged"
+          BorderBrush="#CED4DA" BorderThickness="1">
+
+            <TreeView.Resources>
+                <!-- Скрываем треугольники раскрытия, делая дерево цельным -->
+                <Style TargetType="ToggleButton">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </Style>
+            </TreeView.Resources>
+
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                    <Setter Property="IsExpanded" Value="True"/>
+                    <Setter Property="Padding" Value="5,3"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
+
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding ShortName}" FontWeight="Bold" Margin="0,0,5,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </Trigger>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                        <TextBlock Text="{Binding ResponsibleFio, StringFormat='  [{0}]'}" 
+                            Foreground="#7F8C8D" FontSize="11" VerticalAlignment="Center">
+                        </TextBlock>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+
+        <UniformGrid Grid.Row="1" Columns="3" Margin="0,15,0,0">
+            <Button Content="Добавить" Style="{StaticResource PrimaryButton}" Margin="0,0,5,0" Command="{Binding CreateCommand}"/>
+            <Button Content="Изменить" Style="{StaticResource SecondaryButton}" Margin="5,0,5,0" Command="{Binding EditCommand}"/>
+            <Button Content="Удалить" Style="{StaticResource SecondaryButton}" Foreground="#E74C3C" Margin="5,0,0,0" Command="{Binding DeleteCommand}"/>
+        </UniformGrid>
+    </Grid>
+</Window>

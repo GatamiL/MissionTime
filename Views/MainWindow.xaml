@@ -1,0 +1,301 @@
+<Window x:Class="MissionTime.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MissionTime" Height="600" Width="1000"
+        WindowState="Maximized" WindowStartupLocation="CenterScreen"
+        Style="{StaticResource StandardWindow}">
+
+    <Window.Resources>
+        <!-- Тот самый стиль для двухэтажного заголовка -->
+        <Style x:Key="DayHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <StackPanel>
+                            <!-- Биндинг идет напрямую к свойствам DayHeaderData, т.к. он является DataContext-ом контента -->
+                            <TextBlock Text="{Binding DayNumber}" 
+                               FontWeight="Bold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding DayName}" 
+                               FontSize="10" Opacity="0.7" HorizontalAlignment="Center"
+                               Foreground="{Binding DayColor}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Круглая анимированная кнопка свернуть/развернуть -->
+        <Style x:Key="RowExpandToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent" CornerRadius="9">
+                            <Grid>
+                                <!-- Круглая подложка при наведении -->
+                                <Ellipse x:Name="HoverEllipse" Fill="#E0E0E0" Opacity="0" Width="18" Height="18"/>
+                                <!-- Стрелочка (шеврон) -->
+                                <Path x:Name="Arrow" 
+                                      Data="M 6.5,8 L 9,10.5 L 11.5,8" 
+                                      Stroke="#5F6368" 
+                                      StrokeThickness="2" 
+                                      StrokeStartLineCap="Round" 
+                                      StrokeEndLineCap="Round" 
+                                      StrokeLineJoin="Round"
+                                      HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center" 
+                                      RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform Angle="-90"/>
+                                    </Path.RenderTransform>
+                                </Path>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverEllipse" Property="Opacity" Value="1"/>
+                            </Trigger>
+                            <!-- Когда развернуто - поворачиваем стрелку вниз -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Arrow" 
+                                                             Storyboard.TargetProperty="(Path.RenderTransform).(RotateTransform.Angle)" 
+                                                             To="0" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Arrow" 
+                                                             Storyboard.TargetProperty="(Path.RenderTransform).(RotateTransform.Angle)" 
+                                                             To="-90" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <!-- Скрываем кнопку для строк типа 'Work', оставляем невидимое пространство для индента -->
+                            <DataTrigger Binding="{Binding RowType}" Value="Work">
+                                <Setter Property="Visibility" Value="Hidden"/>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Меню -->
+            <RowDefinition Height="Auto"/>
+            <!-- Фильтры -->
+            <RowDefinition Height="*"/>
+            <!-- Сетка (тут оживет скролл!) -->
+            <RowDefinition Height="Auto"/>
+            <!-- Кнопки (DockPanel) -->
+            <RowDefinition Height="Auto"/>
+            <!-- Строка состояния -->
+        </Grid.RowDefinitions>
+
+        <!-- ВЕРХНЕЕ МЕНЮ -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="Файл">
+                <MenuItem Header="Импорт" Click="Import_Click"/>
+                <MenuItem Header="Экспорт" Click="Export_Click"/>
+                <MenuItem Header="Настройки..." Click="Settings_Click"/>
+                <Separator/>
+                <MenuItem Header="Выход" Click="btnExit_Click"/>
+            </MenuItem>
+            <MenuItem Header="Справочники">
+                <MenuItem Header="Сотрудники" Click="ShowEmployees_Click"/>
+                <MenuItem Header="Подразделения" Click="ShowDepartments_Click"/>
+                <MenuItem Header="Должности" Click="ShowPositions_Click"/>
+                <MenuItem Header="Номенклатура работ" Click="ShowWorkTypes_Click"/>
+                <MenuItem Header="Программы" Click="ShowPrograms_Click"/>
+                <Separator/>
+                <MenuItem Header="Подписи" Click="ShowSignatures_Click"/>
+            </MenuItem>
+            <MenuItem Header="Отчет">
+                <MenuItem Header="Карточка учета трудозатрат" Click="ShowCard_Click"/>
+                <MenuItem Header="Отчет за отдел" Click="ShowReportForDepartment_Click"/>
+                <MenuItem Header="Отчет за комплекс" Click="ShowReportForDivision_Click"/>
+                <MenuItem Header="Папка с отчетами" Click="ShowReportDirectory_Click"/>
+            </MenuItem>
+            <MenuItem Header="Справка">
+                <MenuItem Header="О программе" Click="ShowAbout_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- ПАНЕЛЬ ФИЛЬТРОВ -->
+        <Border Grid.Row="1" Background="#F8F9FA" BorderBrush="#DEE2E6" BorderThickness="0,1,0,1" Padding="15,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Подразделение (Занимает 2 части ширины) -->
+                <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                    <TextBlock Text="Подразделение:" FontSize="11" Foreground="#6C757D"/>
+                    <ComboBox ItemsSource="{Binding Departments}" SelectedItem="{Binding SelectedDepartment}" DisplayMemberPath="DisplayName" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+
+                <!-- Год (Фиксирован) -->
+                <StackPanel Grid.Column="1" Margin="0,0,15,0">
+                    <TextBlock Text="Год:" FontSize="11" Foreground="#6C757D"/>
+                    <ComboBox ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" Width="110"/>
+                </StackPanel>
+
+                <!-- Месяц (Фиксирован) -->
+                <StackPanel Grid.Column="2" Margin="0,0,15,0">
+                    <TextBlock Text="Месяц:" FontSize="11" Foreground="#6C757D"/>
+                    <ComboBox SelectedIndex="{Binding SelectedMonth}" Width="150">
+                        <ComboBoxItem Content="Январь"/>
+                        <ComboBoxItem Content="Февраль"/>
+                        <ComboBoxItem Content="Март"/>
+                        <ComboBoxItem Content="Апрель"/>
+                        <ComboBoxItem Content="Май"/>
+                        <ComboBoxItem Content="Июнь"/>
+                        <ComboBoxItem Content="Июль"/>
+                        <ComboBoxItem Content="Август"/>
+                        <ComboBoxItem Content="Сентябрь"/>
+                        <ComboBoxItem Content="Октябрь"/>
+                        <ComboBoxItem Content="Ноябрь"/>
+                        <ComboBoxItem Content="Декабрь"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- Программа (Проект) (Занимает 1 часть оставшейся ширины) -->
+                <StackPanel Grid.Column="3">
+                    <TextBlock Text="Программа (Проект):" FontSize="11" Foreground="#6C757D"/>
+                    <Grid HorizontalAlignment="Stretch">
+                        <ComboBox ItemsSource="{Binding Programs}" 
+                                  SelectedItem="{Binding SelectedProgram}" 
+                                  DisplayMemberPath="ShortName" 
+                                  IsEnabled="{Binding IsProgramEnabled}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.Style>
+                                <Style TargetType="ComboBox" BasedOn="{StaticResource StandardComboBox}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsProgramEnabled}" Value="False">
+                                            <Setter Property="ToolTip" Value="На выбранный период нет действующих программ!"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ComboBox.Style>
+                        </ComboBox>
+
+                        <!-- Этот TextBlock перекроет ComboBox, когда программ нет -->
+                        <TextBlock Text="Нет актуальных программ" 
+                               VerticalAlignment="Center" 
+                               HorizontalAlignment="Left" 
+                               Margin="10,0,0,0"
+                               IsHitTestVisible="False"
+                               Foreground="Red"
+                               FontStyle="Italic"
+                               Visibility="{Binding IsProgramEnabled, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- СЕТКА -->
+        <DataGrid Grid.Row="2" x:Name="dgMainReport" ItemsSource="{Binding ReportData}" 
+          AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
+          BeginningEdit="dgMainReport_BeginningEdit"
+          CellEditEnding="dgMainReport_CellEditEnding"
+          PreviewKeyDown="dgMainReport_PreviewKeyDown"
+          VirtualizingPanel.IsVirtualizing="True" 
+          VirtualizingPanel.VirtualizationMode="Recycling"
+          CellStyle="{StaticResource DayCellStyle}" 
+          SelectionMode="Extended"
+          SelectionUnit="Cell" 
+          FrozenColumnCount="1" 
+          CanUserReorderColumns="False"
+          EnableColumnVirtualization="True" 
+          RowStyle="{StaticResource DayRowStyle}"
+          Style="{StaticResource MainReportGridStyle}" 
+          Margin="15,10"
+          GridLinesVisibility="All"
+          HorizontalGridLinesBrush="#DEE2E6"
+          VerticalGridLinesBrush="#DEE2E6"
+          SnapsToDevicePixels="True"
+          UseLayoutRounding="True"
+          RowHeaderWidth="0"/>
+
+
+        <!-- ПАНЕЛЬ КНОПОК (Grid.Row="3") -->
+        <DockPanel Grid.Row="3" Margin="15,5,15,15">
+
+            <!-- Группа слева (Действия) -->
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <Button Content="Добавить" 
+                    IsEnabled="{Binding IsProgramEnabled}"
+                    Click="btnAddWork_Click"
+                    Style="{StaticResource StandardButton}"
+                    Width="90" Margin="0,0,5,0"/>
+                <Button Content="Изменить" Width="90" Margin="0,0,5,0" Click="btnEditWork_Click" Style="{StaticResource StandardButton}"/>
+                <Button Content="Удалить" Width="90" Click="btnDeleteWork_Click" Style="{StaticResource StandardButton}"/>
+            </StackPanel>
+
+            <!-- Группа справа (Вид) -->
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Развернуть всё" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#6C757D" FontSize="11"/>
+
+                <ToggleButton x:Name="tgShowAll" 
+                      IsChecked="{Binding IsAllExpanded}"
+                      Width="120" 
+                      Style="{StaticResource StandardToggleButton}"/>
+            </StackPanel>
+
+            <!-- Пустой блок посередине, чтобы растолкать стороны -->
+            <Grid />
+        </DockPanel>
+
+        <!-- НИЖНЯЯ СТРОКА СОСТОЯНИЯ -->
+        <Border Grid.Row="4" Background="#F8F9FA" BorderBrush="#DEE2E6" BorderThickness="0,1,0,0" Padding="15,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Статус:" Foreground="#6C757D" FontSize="12" Margin="0,0,5,0"/>
+                    <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" Foreground="#495057" FontSize="12"/>
+                </StackPanel>
+                
+                <ProgressBar Grid.Column="1" Margin="20,0,0,0" Width="120" Height="8" IsIndeterminate="True" 
+                             Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
+                             VerticalAlignment="Center">
+                    <!-- Небольшой стиль скругления -->
+                    <ProgressBar.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="4"/>
+                        </Style>
+                    </ProgressBar.Resources>
+                </ProgressBar>
+                
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Итого по программе: " Foreground="#6C757D" FontSize="12" VerticalAlignment="Bottom"/>
+                    <TextBlock Text="{Binding GrandTotal}" FontWeight="Bold" Foreground="#0078D7" FontSize="14" VerticalAlignment="Bottom" Margin="0,0,0,-1"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
