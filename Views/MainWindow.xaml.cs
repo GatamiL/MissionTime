@@ -336,6 +336,22 @@ namespace MissionTime.Views
             if (rowType == "Work" && e.Column.DisplayIndex == 0)
             {
                 e.Cancel = true;
+                return;
+            }
+
+            // 3. Запрет редактирования прочерков
+            var boundCol = e.Column as DataGridBoundColumn;
+            if (boundCol != null && boundCol.Binding is Binding binding)
+            {
+                string path = binding.Path.Path;
+                if (path != null && path.StartsWith("Day"))
+                {
+                    string currentVal = rowView[path]?.ToString();
+                    if (currentVal == "-")
+                    {
+                        e.Cancel = true;
+                    }
+                }
             }
         }
 
@@ -581,6 +597,8 @@ namespace MissionTime.Views
 
                     if (!string.IsNullOrEmpty(path) && path.StartsWith("Day"))
                     {
+                        if (targetRowItem[path]?.ToString() == "-") continue;
+
                         string rawVal = cols[c]?.Trim() ?? "";
                         string formatted = FormatInputValue(rawVal);
                         changes.Add(new Tuple<DataRow, string, string>(targetRowItem.Row, path, formatted));

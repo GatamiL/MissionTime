@@ -706,24 +706,43 @@ namespace MissionTime.Services
         }
         public DataTable GetFullTimesheetData(string depIds, int year, int month, long programId)
         {
+            string firstDayStr = new DateTime(year, month, 1).ToString("yyyy-MM-dd");
             string lastDayStr = new DateTime(year, month, DateTime.DaysInMonth(year, month)).ToString("yyyy-MM-dd");
 
-            // ВНИМАНИЕ: Здесь изменен порядок JOIN! 
-            // Сначала цепляем Timesheet (голову), а к ней уже TimesheetEntry (часы)
             string sql = $@"
+        WITH history_with_next AS (
+            SELECT 
+                h.Id as EPH_Id,
+                h.EmployeeId,
+                h.DepartmentId,
+                h.PositionId,
+                h.StartDate,
+                h.Action,
+                (SELECT MIN(StartDate) 
+                 FROM EmployeePositionsHistory next_h 
+                 WHERE next_h.EmployeeId = h.EmployeeId 
+                   AND (next_h.StartDate > h.StartDate OR (next_h.StartDate = h.StartDate AND next_h.Id > h.Id))
+                ) AS NextStartDate
+            FROM EmployeePositionsHistory h
+        )
         SELECT 
-            h.Id as EPH_Id,
+            h.EPH_Id,
             e.Fio,
+            p.Name as PositionName,
+            h.StartDate,
+            h.NextStartDate,
+            h.Action,
             ts.Id as TimesheetId,
             te.WorkId,
             lw.Name as WorkName,
             lw.SpecialCode as WorkCode,
             te.WorkDate,
             te.Minutes
-        FROM EmployeePositionsHistory h
+        FROM history_with_next h
         JOIN Employees e ON h.EmployeeId = e.Id
+        JOIN Positions p ON h.PositionId = p.Id
         -- 1. Находим заголовок табеля для этого чела по этой программе в этот период
-        LEFT JOIN Timesheet ts ON h.Id = ts.EmployeePositionsHistoryId 
+        LEFT JOIN Timesheet ts ON h.EPH_Id = ts.EmployeePositionsHistoryId 
             AND ts.ProgramId = @progId 
             AND ts.Year = @year 
             AND ts.Month = @month
@@ -731,16 +750,14 @@ namespace MissionTime.Services
         LEFT JOIN TimesheetEntry te ON ts.Id = te.TimesheetId
         -- 3. Названия работ
         LEFT JOIN ListOfWork lw ON te.WorkId = lw.Id
-        WHERE h.Id IN (
-            SELECT MAX(Id) FROM EmployeePositionsHistory 
-            WHERE StartDate <= @lastDayMonth 
-            GROUP BY EmployeeId
-        )
-        AND h.DepartmentId IN ({depIds})
-        AND h.Action != 3
-        ORDER BY e.Fio, lw.Name";
+        WHERE h.DepartmentId IN ({depIds})
+          AND h.StartDate <= @lastDayMonth
+          AND (h.NextStartDate IS NULL OR h.NextStartDate > @firstDayMonth)
+          AND h.Action != 3
+        ORDER BY e.Fio, h.StartDate, lw.Name";
 
             DataTable dtRaw = Query(sql,
+                new SQLiteParameter("@firstDayMonth", firstDayStr),
                 new SQLiteParameter("@lastDayMonth", lastDayStr),
                 new SQLiteParameter("@progId", programId),
                 new SQLiteParameter("@year", year),
@@ -755,6 +772,8 @@ namespace MissionTime.Services
             dtResult.Columns.Add("WorkId", typeof(long));
             dtResult.Columns.Add("ProgramId", typeof(long));
             dtResult.Columns.Add("WorkCode", typeof(string));
+            dtResult.Columns.Add("StartDate", typeof(string));
+            dtResult.Columns.Add("NextStartDate", typeof(string));
             for (int i = 1; i <= 31; i++) dtResult.Columns.Add($"Day{i}", typeof(string));
             dtResult.Columns.Add("Total", typeof(string));
 
@@ -769,9 +788,12 @@ namespace MissionTime.Services
                 empRow["EPH_Id"] = empGroup.Key;
                 // Если табель в БД есть, записываем его Id, иначе будет DBNull
                 empRow["TimesheetId"] = first["TimesheetId"];
-                empRow["FullName"] = first.Field<string>("Fio");
+                string fio = first.Field<string>("Fio");
+                empRow["FullName"] = fio;
                 empRow["WorkCode"] = ""; // У сотрудника нет кода работы
                 empRow["RowType"] = "Employee";
+                empRow["StartDate"] = first["StartDate"] != DBNull.Value ? first["StartDate"].ToString() : "";
+                empRow["NextStartDate"] = first["NextStartDate"] != DBNull.Value ? first["NextStartDate"].ToString() : "";
                 dtResult.Rows.Add(empRow);
 
                 var workGroups = empGroup.Where(r => r["WorkId"] != DBNull.Value)
@@ -787,6 +809,8 @@ namespace MissionTime.Services
                     workRow["RowType"] = "Work";
                     workRow["FullName"] = "   • " + workGroup.First().Field<string>("WorkName");
                     workRow["WorkCode"] = workGroup.First().Field<string>("WorkCode");
+                    workRow["StartDate"] = first["StartDate"] != DBNull.Value ? first["StartDate"].ToString() : "";
+                    workRow["NextStartDate"] = first["NextStartDate"] != DBNull.Value ? first["NextStartDate"].ToString() : "";
 
                     foreach (var entry in workGroup)
                     {

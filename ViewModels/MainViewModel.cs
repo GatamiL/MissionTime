@@ -92,6 +92,7 @@ namespace MissionTime.ViewModels
                 string colName = $"Day{i}";
                 // Если колонка совпадает с измененной, берем новое значение, иначе старое
                 string val = (colName == changedCol) ? changedVal : changedRow[colName]?.ToString();
+                if (val == "-") continue;
                 rowSum += TimeUtils.HHmmToMinutes(val);
             }
 
@@ -183,21 +184,52 @@ namespace MissionTime.ViewModels
 
             if (employeeRow == null) return;
 
-            for (int d = 1; d <= 31; d++)
+            int year = SelectedYear;
+            int month = SelectedMonth + 1;
+            int daysInMonth = DateTime.DaysInMonth(year, month);
+            DateTime monthStart = new DateTime(year, month, 1);
+            DateTime monthEnd = new DateTime(year, month, daysInMonth);
+
+            DateTime activeStart = monthStart;
+            if (employeeRow.Table.Columns.Contains("StartDate") && employeeRow["StartDate"] != DBNull.Value && DateTime.TryParse(employeeRow["StartDate"].ToString(), out DateTime sd))
             {
-                string colName = $"Day{d}";
-                int daySum = 0;
-                foreach (var row in workRows)
-                {
-                    daySum += TimeUtils.HHmmToMinutes(row[colName]?.ToString());
-                }
-                employeeRow[colName] = TimeUtils.MinutesToHHmm(daySum);
+                if (sd > monthStart) activeStart = sd;
+            }
+
+            DateTime activeEnd = monthEnd;
+            if (employeeRow.Table.Columns.Contains("NextStartDate") && employeeRow["NextStartDate"] != DBNull.Value && DateTime.TryParse(employeeRow["NextStartDate"].ToString(), out DateTime nsd))
+            {
+                DateTime prevDay = nsd.AddDays(-1);
+                if (prevDay < monthEnd) activeEnd = prevDay;
             }
 
             int empTotal = 0;
-            for (int d = 1; d <= 31; d++)
+            for (int i = 1; i <= 31; i++)
             {
-                empTotal += TimeUtils.HHmmToMinutes(employeeRow[$"Day{d}"]?.ToString());
+                string colName = $"Day{i}";
+                if (i <= daysInMonth)
+                {
+                    DateTime currentDate = new DateTime(year, month, i);
+                    if (currentDate >= activeStart && currentDate <= activeEnd)
+                    {
+                        int daySum = 0;
+                        foreach (var row in workRows)
+                        {
+                            string val = row[colName]?.ToString();
+                            if (val != "-") daySum += TimeUtils.HHmmToMinutes(val);
+                        }
+                        employeeRow[colName] = TimeUtils.MinutesToHHmm(daySum);
+                        empTotal += daySum;
+                    }
+                    else
+                    {
+                        employeeRow[colName] = "-";
+                    }
+                }
+                else
+                {
+                    employeeRow[colName] = "-";
+                }
             }
             employeeRow["Total"] = TimeUtils.MinutesToHHmm(empTotal);
 
@@ -555,11 +587,55 @@ namespace MissionTime.ViewModels
                 var workRows = table.Rows.Cast<DataRow>().Where(r => r["RowType"].ToString() == "Work").ToList();
                 var empRows = table.Rows.Cast<DataRow>().Where(r => r["RowType"].ToString() == "Employee").ToList();
 
+                int year = SelectedYear;
+                int month = SelectedMonth + 1;
+                int daysInMonth = DateTime.DaysInMonth(year, month);
+                DateTime monthStart = new DateTime(year, month, 1);
+                DateTime monthEnd = new DateTime(year, month, daysInMonth);
+
                 // Итоги для каждой работы (Итого справа)
                 foreach (var workRow in workRows)
                 {
+                    DateTime activeStart = monthStart;
+                    if (workRow.Table.Columns.Contains("StartDate") && workRow["StartDate"] != DBNull.Value && DateTime.TryParse(workRow["StartDate"].ToString(), out DateTime sd))
+                    {
+                        if (sd > monthStart) activeStart = sd;
+                    }
+
+                    DateTime activeEnd = monthEnd;
+                    if (workRow.Table.Columns.Contains("NextStartDate") && workRow["NextStartDate"] != DBNull.Value && DateTime.TryParse(workRow["NextStartDate"].ToString(), out DateTime nsd))
+                    {
+                        DateTime prevDay = nsd.AddDays(-1);
+                        if (prevDay < monthEnd) activeEnd = prevDay;
+                    }
+
                     int rowSum = 0;
-                    for (int i = 1; i <= 31; i++) rowSum += TimeUtils.HHmmToMinutes(workRow[$"Day{i}"]?.ToString());
+                    for (int i = 1; i <= 31; i++)
+                    {
+                        string colName = $"Day{i}";
+                        if (i <= daysInMonth)
+                        {
+                            DateTime currentDate = new DateTime(year, month, i);
+                            if (currentDate >= activeStart && currentDate <= activeEnd)
+                            {
+                                // Активный день. Если значение равно "-", очищаем его
+                                if (workRow[colName]?.ToString() == "-")
+                                {
+                                    workRow[colName] = "";
+                                }
+                                rowSum += TimeUtils.HHmmToMinutes(workRow[colName]?.ToString());
+                            }
+                            else
+                            {
+                                // Неактивный день - ставим прочерк
+                                workRow[colName] = "-";
+                            }
+                        }
+                        else
+                        {
+                            workRow[colName] = "-";
+                        }
+                    }
                     workRow["Total"] = TimeUtils.MinutesToHHmm(rowSum);
                 }
 
@@ -569,14 +645,46 @@ namespace MissionTime.ViewModels
                     long ephId = Convert.ToInt64(empRow["EPH_Id"]);
                     var myWorkRows = workRows.Where(r => Convert.ToInt64(r["EPH_Id"]) == ephId).ToList();
 
-                    int empTotal = 0;
-                    for (int d = 1; d <= 31; d++)
+                    DateTime activeStart = monthStart;
+                    if (empRow.Table.Columns.Contains("StartDate") && empRow["StartDate"] != DBNull.Value && DateTime.TryParse(empRow["StartDate"].ToString(), out DateTime sd))
                     {
-                        int daySum = 0;
-                        foreach (var wRow in myWorkRows) daySum += TimeUtils.HHmmToMinutes(wRow[$"Day{d}"]?.ToString());
+                        if (sd > monthStart) activeStart = sd;
+                    }
 
-                        empRow[$"Day{d}"] = TimeUtils.MinutesToHHmm(daySum);
-                        empTotal += daySum;
+                    DateTime activeEnd = monthEnd;
+                    if (empRow.Table.Columns.Contains("NextStartDate") && empRow["NextStartDate"] != DBNull.Value && DateTime.TryParse(empRow["NextStartDate"].ToString(), out DateTime nsd))
+                    {
+                        DateTime prevDay = nsd.AddDays(-1);
+                        if (prevDay < monthEnd) activeEnd = prevDay;
+                    }
+
+                    int empTotal = 0;
+                    for (int i = 1; i <= 31; i++)
+                    {
+                        string colName = $"Day{i}";
+                        if (i <= daysInMonth)
+                        {
+                            DateTime currentDate = new DateTime(year, month, i);
+                            if (currentDate >= activeStart && currentDate <= activeEnd)
+                            {
+                                int daySum = 0;
+                                foreach (var wRow in myWorkRows)
+                                {
+                                    string val = wRow[colName]?.ToString();
+                                    if (val != "-") daySum += TimeUtils.HHmmToMinutes(val);
+                                }
+                                empRow[colName] = TimeUtils.MinutesToHHmm(daySum);
+                                empTotal += daySum;
+                            }
+                            else
+                            {
+                                empRow[colName] = "-";
+                            }
+                        }
+                        else
+                        {
+                            empRow[colName] = "-";
+                        }
                     }
                     empRow["Total"] = TimeUtils.MinutesToHHmm(empTotal);
                 }
@@ -956,7 +1064,51 @@ namespace MissionTime.ViewModels
                     if (dt.Columns.Contains("IsExpanded")) newRow["IsExpanded"] = true;
                     if (dt.Columns.Contains("IsRowVisible")) newRow["IsRowVisible"] = isParentExpanded;
 
-                    for (int i = 1; i <= 31; i++) newRow[$"Day{i}"] = "";
+                    if (parentEmp != null)
+                    {
+                        if (dt.Columns.Contains("StartDate")) newRow["StartDate"] = parentEmp["StartDate"];
+                        if (dt.Columns.Contains("NextStartDate")) newRow["NextStartDate"] = parentEmp["NextStartDate"];
+                    }
+
+                    int year = SelectedYear;
+                    int month = SelectedMonth + 1;
+                    int daysInMonth = DateTime.DaysInMonth(year, month);
+                    DateTime monthStart = new DateTime(year, month, 1);
+                    DateTime monthEnd = new DateTime(year, month, daysInMonth);
+
+                    DateTime activeStart = monthStart;
+                    if (parentEmp != null && dt.Columns.Contains("StartDate") && parentEmp["StartDate"] != DBNull.Value && DateTime.TryParse(parentEmp["StartDate"].ToString(), out DateTime sd))
+                    {
+                        if (sd > monthStart) activeStart = sd;
+                    }
+
+                    DateTime activeEnd = monthEnd;
+                    if (parentEmp != null && dt.Columns.Contains("NextStartDate") && parentEmp["NextStartDate"] != DBNull.Value && DateTime.TryParse(parentEmp["NextStartDate"].ToString(), out DateTime nsd))
+                    {
+                        DateTime prevDay = nsd.AddDays(-1);
+                        if (prevDay < monthEnd) activeEnd = prevDay;
+                    }
+
+                    for (int i = 1; i <= 31; i++)
+                    {
+                        string colName = $"Day{i}";
+                        if (i <= daysInMonth)
+                        {
+                            DateTime currentDate = new DateTime(year, month, i);
+                            if (currentDate >= activeStart && currentDate <= activeEnd)
+                            {
+                                newRow[colName] = "";
+                            }
+                            else
+                            {
+                                newRow[colName] = "-";
+                            }
+                        }
+                        else
+                        {
+                            newRow[colName] = "-";
+                        }
+                    }
 
                     int lastIndex = -1;
                     for (int i = 0; i < dt.Rows.Count; i++)

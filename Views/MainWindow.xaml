@@ -226,7 +226,7 @@
           SelectionUnit="Cell" 
           FrozenColumnCount="2" 
           CanUserReorderColumns="False"
-          EnableColumnVirtualization="True" 
+          EnableColumnVirtualization="False" 
           RowStyle="{StaticResource DayRowStyle}"
           Style="{StaticResource MainReportGridStyle}" 
           Margin="15,10"
